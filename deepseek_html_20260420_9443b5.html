@@ -398,7 +398,7 @@
         function extractData(text) {
             const data = {};
             
-            // Nome
+            // Nome do Cliente
             let nomeMatch = text.match(/Nome:\s*([A-Z][A-Z\s]+?)(?=\s+(?:Sexo|CPF|E-mail|RG|Telefone|Celular|$))/i);
             data.client_name = nomeMatch ? nomeMatch[1].trim() : (text.match(/Nome:\s*([^C]+?)(?=\s+CPF)/i) || [, ''])[1].trim();
             
@@ -410,7 +410,7 @@
                 data.client_phone = '';
             }
             
-            // Endereço simplificado (bairro e cidade)
+            // Endereço (bairro e cidade)
             let bairroMatch = text.match(/Bairro:\s*([^C]+?)(?=\s+Cidade:)/i);
             let cidadeMatch = text.match(/Cidade:\s*([^E]+?)(?=\s+Estado:)/i);
             
@@ -419,7 +419,7 @@
             
             data.client_address = bairro ? `${bairro} - ${cidade}` : cidade;
             
-            // Veículo - APENAS O MODELO (sem a marca)
+            // Modelo do Veículo
             let modeloMatch = text.match(/Modelo:\s*([^A]+?)(?=\s+Ano\s+Fabricacao:)/i);
             if (modeloMatch) {
                 let modelo = modeloMatch[1].trim();
@@ -446,38 +446,41 @@
             let chassiMatch = text.match(/Chassi:\s*([A-Z0-9]{17})/i);
             data.vehicle_chassi = chassiMatch ? chassiMatch[1] : '';
             
-            // CONSULTOR - Pegar apenas o nome entre "Nome:" e "Telefone:" ou "Email:"
+            // ========== CONSULTOR - CORRIGIDO ==========
+            // Procurar pelo padrão "Nome:" que vem depois de "CONSULTOR:" e antes de "Telefone:"
             let consultor = '';
             
-            // Tentativa 1: Procurar pelo padrão "Nome:" até "Telefone:"
-            let consultorMatch = text.match(/Nome:\s*([A-Z][A-Za-z\s.]+?)(?=\s+Telefone:|\s+Email:)/i);
-            if (consultorMatch) {
-                consultor = consultorMatch[1].trim();
-                // Limpar qualquer texto residual
-                consultor = consultor.replace(/\s+Telefone.*$/i, '');
-                consultor = consultor.replace(/\s+Email.*$/i, '');
-                consultor = consultor.replace(/\s+ZapSign.*$/i, '');
+            // Tentativa 1: Procurar por "CONSULTOR:" e depois pegar o "Nome:" seguinte
+            let consultorSection = text.match(/CONSULTOR:.*?Nome:\s*([^\n]+)/is);
+            if (consultorSection) {
+                consultor = consultorSection[1].trim();
+                // Remover qualquer coisa que pareça com ZapSign
+                consultor = consultor.replace(/ZapSign\s+[a-f0-9-]+/i, '');
+                consultor = consultor.replace(/Documento assinado.*$/i, '');
+                consultor = consultor.trim();
             }
             
-            // Tentativa 2: Se não achou, procurar por "CONSULTOR:"
+            // Tentativa 2: Se não achou, procurar por "Consultor:" (com C maiúsculo)
             if (!consultor) {
-                let consultorMatch2 = text.match(/CONSULTOR:\s*([^\n]+)/i);
-                if (consultorMatch2) {
-                    consultor = consultorMatch2[1].trim();
+                let consultorSection2 = text.match(/Consultor:.*?Nome:\s*([^\n]+)/is);
+                if (consultorSection2) {
+                    consultor = consultorSection2[1].trim();
+                    consultor = consultor.replace(/ZapSign\s+[a-f0-9-]+/i, '');
+                    consultor = consultor.trim();
                 }
             }
             
-            // Tentativa 3: Se ainda não achou, procurar por nomes conhecidos
+            // Tentativa 3: Procurar por qualquer "Nome:" que não seja o nome do cliente
             if (!consultor) {
-                let commonNames = [
-                    'Caroline de Oliveira Chabi',
-                    'Caroline Chabi',
-                    'Gilberto Santos'
-                ];
-                for (let name of commonNames) {
-                    if (text.includes(name)) {
-                        consultor = name;
-                        break;
+                let allNames = text.match(/Nome:\s*([^\n]+)/gi);
+                if (allNames && allNames.length > 1) {
+                    for (let i = 1; i < allNames.length; i++) {
+                        let possibleName = allNames[i].replace(/Nome:/i, '').trim();
+                        // Verificar se não é o nome do cliente e não tem "ZapSign"
+                        if (possibleName !== data.client_name && !possibleName.includes('ZapSign') && !possibleName.includes('Zap')) {
+                            consultor = possibleName;
+                            break;
+                        }
                     }
                 }
             }
