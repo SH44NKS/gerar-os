@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tracker-Net - Ordem de Serviço</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #ff6b35 0%, #e55a2b 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        .card h2 {
+            color: #1a472a;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ff6b35;
+        }
+
+        .upload-area {
+            border: 2px dashed #ff6b35;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9ff;
+        }
+
+        .upload-area:hover {
+            border-color: #1a472a;
+            background: #f0f2ff;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .btn {
+            background: #ff6b35;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: #e55a2b;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #1a472a;
+        }
+
+        .btn-secondary:hover {
+            background: #0f331f;
+        }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .form-group select, .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .extracted-data {
+            margin-top: 20px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .data-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .data-section h3 {
+            color: #ff6b35;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        .data-row {
+            display: flex;
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+        }
+
+        .data-label {
+            font-weight: bold;
+            width: 100px;
+            color: #555;
+        }
+
+        .data-value {
+            flex: 1;
+            color: #333;
+        }
+
+        .data-value input {
+            width: 100%;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .os-preview {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            border-left: 4px solid #ff6b35;
+        }
+
+        .log-area {
+            margin-top: 20px;
+            background: #1e1e1e;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-left: 3px solid #0f0;
+            padding-left: 10px;
+        }
+
+        .log-error {
+            color: #ff6b6b;
+            border-left-color: #ff6b6b;
+        }
+
+        .log-success {
+            color: #51cf66;
+            border-left-color: #51cf66;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .copy-btn {
+            background: #17a2b8;
+        }
+
+        .copy-btn:hover {
+            background: #138496;
+        }
+
+        @media (max-width: 900px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@2.16.105/build/pdf.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔧 Tracker-Net - Ordem de Serviço</h1>
+            <p>Upload do PDF → Preencha serviço e técnico → Gere a OS</p>
+        </div>
+
+        <div class="main-grid">
+            <!-- Coluna de Upload -->
+            <div class="card">
+                <h2>📄 1. Upload do PDF</h2>
+                <div class="upload-area" id="uploadArea">
+                    <div style="font-size: 48px; margin-bottom: 10px;">📁</div>
+                    <p>Clique ou arraste o PDF do Termo de Adesão</p>
+                    <small>Arquivo PDF da Foco Proteção Veicular</small>
+                    <input type="file" id="fileInput" accept=".pdf" class="file-input">
+                </div>
+
+                <div id="extractedData" style="display: none; margin-top: 20px;">
+                    <h3>📋 Dados do Cliente/Veículo</h3>
+                    <div id="dataContainer" class="extracted-data"></div>
+                </div>
+            </div>
+
+            <!-- Coluna de Configuração da OS -->
+            <div class="card">
+                <h2>🔧 2. Configurar Ordem de Serviço</h2>
+                
+                <div class="form-group">
+                    <label>📋 Tipo de Serviço</label>
+                    <select id="servicoType">
+                        <option value="">— selecione —</option>
+                        <option value="Instalação">🔧 Instalação</option>
+                        <option value="Retirada">📤 Retirada</option>
+                        <option value="Manutenção">🛠️ Manutenção</option>
+                        <option value="Troca de equipamento">🔄 Troca de equipamento</option>
+                        <option value="Outro">📝 Outro</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>👨‍🔧 Técnico Responsável</label>
+                    <select id="tecnicoList">
+                        <option value="">— selecione —</option>
+                        <option value="Adriano Ferreira">Adriano Ferreira</option>
+                        <option value="Alan Coutinho">Alan Coutinho</option>
+                        <option value="Anderson Mota">Anderson Mota</option>
+                        <option value="Atailton Vila Nova">Atailton Vila Nova</option>
+                        <option value="Caio Cezar">Caio Cezar</option>
+                        <option value="Evenildo Costa">Evenildo Costa</option>
+                        <option value="Gilcimar Lima">Gilcimar Lima</option>
+                        <option value="Mickael Bispo">Mickael Bispo</option>
+                        <option value="Vagner Souza">Vagner Souza</option>
+                        <option value="Wilson de Freitas">Wilson de Freitas</option>
+                        <option value="Alisson Santos">Alisson Santos</option>
+                        <option value="Associado">Associado</option>
+                        <option value="Outro">Outro</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>🤝 Consultor</label>
+                    <input type="text" id="consultor" placeholder="Nome do consultor">
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-success" onclick="gerarOS()">📄 Gerar Ordem de Serviço</button>
+                    <button class="btn copy-btn" onclick="copiarOS()">📋 Copiar OS</button>
+                    <button class="btn btn-secondary" onclick="limparTudo()">Limpar Tudo</button>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <h3>📋 Prévia da OS</h3>
+                    <div id="osPreview" class="os-preview">
+                        ⚠️ Preencha os dados e clique em "Gerar Ordem de Serviço"
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📝 Log de Atividades</h2>
+            <div class="log-area" id="logArea">
+                <div class="log-entry">✅ Sistema pronto. Faça upload do PDF.</div>
+            </div>
+            <button class="btn btn-secondary" onclick="clearLog()" style="margin-top: 10px;">Limpar Log</button>
+        </div>
+    </div>
+
+    <script>
+        let extractedData = {};
+        
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@2.16.105/build/pdf.worker.min.js';
+
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const logArea = document.getElementById('logArea');
+
+        function addLog(message, type = 'info') {
+            const logEntry = document.createElement('div');
+            const timestamp = new Date().toLocaleTimeString();
+            logEntry.className = `log-entry ${type === 'error' ? 'log-error' : (type === 'success' ? 'log-success' : '')}`;
+            logEntry.innerHTML = `[${timestamp}] ${message}`;
+            logArea.appendChild(logEntry);
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        function clearLog() {
+            logArea.innerHTML = '<div class="log-entry">✅ Log limpo</div>';
+        }
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#28a745';
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.borderColor = '#ff6b35';
+        });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#ff6b35';
+            const file = e.dataTransfer.files[0];
+            if (file && file.type === 'application/pdf') {
+                processPDF(file);
+            } else {
+                addLog('❌ Envie um arquivo PDF válido', 'error');
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files[0]) {
+                processPDF(e.target.files[0]);
+            }
+        });
+
+        async function processPDF(file) {
+            addLog(`📄 Processando: ${file.name}`);
+            
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                
+                let fullText = '';
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    fullText += textContent.items.map(item => item.str).join(' ') + '\n';
+                }
+                
+                extractData(fullText);
+                addLog('✅ PDF processado com sucesso!', 'success');
+                
+            } catch (error) {
+                addLog(`❌ Erro: ${error.message}`, 'error');
+            }
+        }
+
+        function extractData(text) {
+            const data = {};
+            
+            // Nome
+            let nomeMatch = text.match(/Nome:\s*([A-Z][A-Z\s]+?)(?=\s+(?:Sexo|CPF|E-mail|RG|Telefone|Celular|$))/i);
+            data.client_name = nomeMatch ? nomeMatch[1].trim() : (text.match(/Nome:\s*([^C]+?)(?=\s+CPF)/i) || [, ''])[1].trim();
+            
+            // Telefone
+            let phoneMatch = text.match(/Celular:\s*\(?(\d{2})\)?\s*(\d{4,5})-?(\d{4})/i) || text.match(/Telefone:\s*\(?(\d{2})\)?\s*(\d{4,5})-?(\d{4})/i);
+            if (phoneMatch) {
+                data.client_phone = `(${phoneMatch[1]}) ${phoneMatch[2]}-${phoneMatch[3]}`;
+            } else {
+                data.client_phone = '';
+            }
+            
+            // Endereço simplificado (bairro e cidade)
+            let bairroMatch = text.match(/Bairro:\s*([^C]+?)(?=\s+Cidade:)/i);
+            let cidadeMatch = text.match(/Cidade:\s*([^E]+?)(?=\s+Estado:)/i);
+            
+            let bairro = bairroMatch ? bairroMatch[1].trim().replace(/\s+Cidade$/, '') : '';
+            let cidade = cidadeMatch ? cidadeMatch[1].trim().replace(/\s+Estado$/, '') : 'Salvador';
+            
+            data.client_address = bairro ? `${bairro} - ${cidade}` : cidade;
+            
+            // Veículo - APENAS O MODELO (sem a marca)
+            let modeloMatch = text.match(/Modelo:\s*([^A]+?)(?=\s+Ano\s+Fabricacao:)/i);
+            if (modeloMatch) {
+                let modelo = modeloMatch[1].trim();
+                modelo = modelo.replace(/\s+Ano$/, '').replace(/\s+\d{4}$/, '');
+                data.vehicle_model = modelo;
+            } else {
+                let modeloSegundo = text.match(/Modelo:\s*([^\n]+)/i);
+                data.vehicle_model = modeloSegundo ? modeloSegundo[1].split('Ano')[0].trim() : '';
+            }
+            
+            // Placa
+            let placaMatch = text.match(/Placa:\s*([A-Z0-9]{3}[A-Z0-9]{4}|[A-Z0-9]{3}-[A-Z0-9]{4})/i);
+            if (placaMatch) {
+                let placa = placaMatch[1];
+                if (!placa.includes('-') && placa.length === 7) {
+                    placa = placa.substring(0, 3) + '-' + placa.substring(3);
+                }
+                data.vehicle_plate = placa;
+            } else {
+                data.vehicle_plate = '';
+            }
+            
+            // Chassi
+            let chassiMatch = text.match(/Chassi:\s*([A-Z0-9]{17})/i);
+            data.vehicle_chassi = chassiMatch ? chassiMatch[1] : '';
+            
+            // CONSULTOR - Pegar apenas o nome entre "Nome:" e "Telefone:" ou "Email:"
+            let consultor = '';
+            
+            // Tentativa 1: Procurar pelo padrão "Nome:" até "Telefone:"
+            let consultorMatch = text.match(/Nome:\s*([A-Z][A-Za-z\s.]+?)(?=\s+Telefone:|\s+Email:)/i);
+            if (consultorMatch) {
+                consultor = consultorMatch[1].trim();
+                // Limpar qualquer texto residual
+                consultor = consultor.replace(/\s+Telefone.*$/i, '');
+                consultor = consultor.replace(/\s+Email.*$/i, '');
+                consultor = consultor.replace(/\s+ZapSign.*$/i, '');
+            }
+            
+            // Tentativa 2: Se não achou, procurar por "CONSULTOR:"
+            if (!consultor) {
+                let consultorMatch2 = text.match(/CONSULTOR:\s*([^\n]+)/i);
+                if (consultorMatch2) {
+                    consultor = consultorMatch2[1].trim();
+                }
+            }
+            
+            // Tentativa 3: Se ainda não achou, procurar por nomes conhecidos
+            if (!consultor) {
+                let commonNames = [
+                    'Caroline de Oliveira Chabi',
+                    'Caroline Chabi',
+                    'Gilberto Santos'
+                ];
+                for (let name of commonNames) {
+                    if (text.includes(name)) {
+                        consultor = name;
+                        break;
+                    }
+                }
+            }
+            
+            data.consultor = consultor || '';
+            
+            extractedData = data;
+            
+            // Atualizar campo consultor na UI
+            document.getElementById('consultor').value = data.consultor || '';
+            
+            displayExtractedData(data);
+            
+            addLog(`📊 Cliente: ${data.client_name || 'NÃO ENCONTRADO'}`, data.client_name ? 'success' : 'warning');
+            addLog(`📊 Veículo: ${data.vehicle_model || 'NÃO ENCONTRADO'}`, data.vehicle_model ? 'success' : 'warning');
+            addLog(`📊 Placa: ${data.vehicle_plate || 'NÃO ENCONTRADA'}`, data.vehicle_plate ? 'success' : 'warning');
+            addLog(`📊 Chassi: ${data.vehicle_chassi || 'NÃO ENCONTRADO'}`, data.vehicle_chassi ? 'success' : 'warning');
+            addLog(`📊 Consultor: ${data.consultor || 'NÃO ENCONTRADO'}`, data.consultor ? 'success' : 'warning');
+        }
+
+        function displayExtractedData(data) {
+            const container = document.getElementById('dataContainer');
+            container.innerHTML = '';
+            
+            const fields = [
+                { label: 'Nome do Cliente', key: 'client_name' },
+                { label: 'Telefone', key: 'client_phone' },
+                { label: 'Localização', key: 'client_address' },
+                { label: 'Modelo do Veículo', key: 'vehicle_model' },
+                { label: 'Placa', key: 'vehicle_plate' },
+                { label: 'Chassi', key: 'vehicle_chassi' },
+                { label: 'Consultor', key: 'consultor' }
+            ];
+            
+            for (const field of fields) {
+                let value = field.key && data[field.key] ? data[field.key] : '';
+                
+                const row = document.createElement('div');
+                row.className = 'data-row';
+                row.innerHTML = `
+                    <div class="data-label">${field.label}:</div>
+                    <div class="data-value">
+                        <input type="text" value="${escapeHtml(value)}" data-field="${field.key}" onchange="updateField('${field.key}', this.value)">
+                    </div>
+                `;
+                container.appendChild(row);
+            }
+            
+            document.getElementById('extractedData').style.display = 'block';
+        }
+
+        function updateField(field, value) {
+            extractedData[field] = value;
+            if (field === 'consultor') {
+                document.getElementById('consultor').value = value;
+            }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function gerarOS() {
+            const servico = document.getElementById('servicoType').value;
+            const tecnico = document.getElementById('tecnicoList').value;
+            const consultor = document.getElementById('consultor').value || extractedData.consultor;
+            
+            if (!servico) {
+                addLog('❌ Selecione o tipo de serviço', 'error');
+                return;
+            }
+            
+            if (!tecnico) {
+                addLog('❌ Selecione o técnico responsável', 'error');
+                return;
+            }
+            
+            if (!extractedData.client_name) {
+                addLog('❌ Faça upload do PDF primeiro', 'error');
+                return;
+            }
+            
+            // Identificador do veículo (placa ou chassi)
+            let vehicleId = extractedData.vehicle_plate || extractedData.vehicle_chassi || 'SEM PLACA/CHASSI';
+            
+            // Mapear serviço para emoji
+            const servicoEmoji = {
+                'Instalação': '🔧',
+                'Retirada': '📤',
+                'Manutenção': '🛠️',
+                'Troca de equipamento': '🔄',
+                'Outro': '📝'
+            };
+            
+            const emoji = servicoEmoji[servico] || '📋';
+            
+            // Montar a OS
+            let os = `━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+            os += `📋 ORDEM DE SERVIÇO\n`;
+            os += `━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+            os += `${emoji} ${servico.toUpperCase()}\n\n`;
+            os += `👤 ${extractedData.client_name || 'NÃO INFORMADO'}\n`;
+            os += `🚗 ${extractedData.vehicle_model || ''} - ${vehicleId}\n`;
+            os += `📱 ${extractedData.client_phone || 'NÃO INFORMADO'}\n`;
+            os += `📍 ${extractedData.client_address || 'NÃO INFORMADO'}\n\n`;
+            os += `👷 Técnico: ${tecnico}\n`;
+            if (consultor) {
+                os += `🤝 Consultor: ${consultor}\n`;
+            }
+            os += `━━━━━━━━━━━━━━━━━━━━━━━━`;
+            
+            document.getElementById('osPreview').innerHTML = os.replace(/\n/g, '<br>');
+            addLog(`✅ OS gerada para ${extractedData.client_name} - ${servico}`, 'success');
+        }
+        
+        function copiarOS() {
+            const osText = document.getElementById('osPreview').innerText;
+            if (!osText || osText === '⚠️ Preencha os dados e clique em "Gerar Ordem de Serviço"') {
+                addLog('❌ Nenhuma OS gerada para copiar', 'error');
+                return;
+            }
+            
+            navigator.clipboard.writeText(osText).then(() => {
+                addLog('✅ OS copiada para a área de transferência!', 'success');
+            }).catch(() => {
+                addLog('❌ Erro ao copiar OS', 'error');
+            });
+        }
+        
+        function limparTudo() {
+            document.getElementById('extractedData').style.display = 'none';
+            document.getElementById('osPreview').innerHTML = '⚠️ Preencha os dados e clique em "Gerar Ordem de Serviço"';
+            document.getElementById('servicoType').value = '';
+            document.getElementById('tecnicoList').value = '';
+            document.getElementById('consultor').value = '';
+            extractedData = {};
+            addLog('🧹 Dados limpos', 'info');
+        }
+        
+        addLog('🚀 Sistema de Ordem de Serviço pronto!', 'success');
+        addLog('📌 Faça upload do PDF, selecione serviço e técnico, depois gere a OS', 'info');
+    </script>
+</body>
+</html>
